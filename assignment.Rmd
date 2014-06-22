@@ -1,0 +1,55 @@
+Machine Learning Assignment
+==============================================================
+
+**Introduction**
+
+The following analysis focuses on predicting the manner in which individuals are exercising based on movement data. The data was collected using motion sensors and split into Test and Training data sets. A machine learning algorithm was applied on the training data set and later on the testing data set for validation.   
+
+**Variables Selection**
+
+Raw data set consist of 160 variables. By looking at the raw data it is possible to observe that there are variables with a lot of NA and missing values. Those variables will not be included in the model. Also, 5 other variables were not considered as predictors: X, user_name,raw_timestamp_part_1,raw_timestamp_part_2	and cvtd_timestamp. 
+
+After removing variables with a lot of NA and missing values the number of predictors reduced to 55. All of them were selected for the model. 
+
+```{r,echo = TRUE}
+library(caret)
+RawData <- read.csv("pml-training.csv",na.strings=c("NA",""))
+CleanRaw <- RawData[ , colSums(is.na(RawData)) == 0]
+CleanRaw <-  CleanRaw[-c(1:5)]
+```
+
+A test and training data set are created with 70% of data in training and 30% in test.
+
+```{r,echo = TRUE}
+inTrain <- createDataPartition(y = CleanRaw$classe, p = 0.7, list = FALSE)
+train <- CleanRaw[inTrain, ]
+test  <- CleanRaw[-inTrain, ]
+```
+
+**Model Selection**
+
+Since the outcome variable is a factor variable the following machine learning algorithms are used: Random Forest and Regression Trees. Algorithm with the highest prediction accuracy and lowest in sample error will be selected.
+
+Every algorithm is run with a 10 fold cross-validation. 
+```{r,echo = TRUE}
+ctrl <- trainControl(method = "cv", number  = 10)
+modFit2 = train(classe~ . , data = train, method = 'rpart', trControl = ctrl)
+modFit2$results
+
+modFit1 = train(classe~ . , data = train, method = 'rf', trControl = ctrl)
+modFit1$results
+
+estimated1 = predict(modFit1, test)
+table(estimated1,test$classe)
+sum(estimated1 ==test$classe)/length(estimated1)
+
+```
+
+The results of the Regression Trees prediction algorithm show poor accuracy of about 58% and the in sample error of 0.42. Both measures indicate poor prediction with this algorithm. Thus this algorithm is not used for the final analysis.
+
+The results of the Random Forest prediction algorithm show high accuracy of about 99% and the in sample error rate of 0.01. When applied on the test data set the accuracy is 99% and out of sample error is 0.01. Based on those measures the Random Forest model is selected for predicting future Classe values.
+
+**Results**
+
+By analyzing the movement data we end up with the Random Forest machine learning algorithm with prediction accuracy of 99% and out sample error of 0.01. This algorithm will be used for predicting 20 cases provided in the assignment. 
+
